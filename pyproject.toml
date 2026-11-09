@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brownout-buddy"
+version = "0.1.0"
+description = "Menu-bar app that notices brownouts and internet drops, protects work, and keeps a local outage log."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Wesley Siebenthal" }]
+keywords = ["brownout", "outage", "tray", "battery"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: MacOS X",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: X11 Applications",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Monitoring",
+]
+dependencies = ["psutil>=5.9"]
+
+[project.optional-dependencies]
+tray = ["pystray>=0.19.5", "pillow>=10"]
+dev = ["pytest>=8", "pillow>=10"]
+
+[project.scripts]
+brownout-buddy = "brownout_buddy.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/wsiebenthal/brownout-buddy"
+Repository = "https://github.com/wsiebenthal/brownout-buddy"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,102 @@
+# Brownout Buddy configuration.
+# Copy with `brownout-buddy init-config`, then edit the copy.
+# Pass `--config` to use a file in any location.
+# Keys you omit keep the defaults shown here.
+
+# How often the live monitor checks power and the network, in seconds.
+poll_interval_seconds = 5
+
+# IANA timezone for history and stats, for example "Asia/Manila".
+# Empty means the computer's local timezone.
+timezone = ""
+
+[power]
+# Read the battery with psutil. When false, live monitoring will not open
+# power outages. The simulator still can.
+enabled = true
+
+[network]
+enabled = true
+# TCP connect timeout for each probe, in seconds.
+timeout_seconds = 2.0
+# Consecutive changed polls before the network state sticks.
+# Failures wait longer than recoveries so a single dropped probe does not
+# open an outage, and coming back online is noticed quickly.
+failure_threshold = 2
+recovery_threshold = 1
+# On Linux, a missing default route counts as LAN down when no LAN probes
+# are configured. Other operating systems do not read the route table yet;
+# add [[network.lan_probes]] there to separate a dead router from a dead ISP.
+use_default_route = true
+
+# Optional router checks. One successful TCP connect means the LAN is up.
+# Prefer an IP literal. A hostname depends on DNS, which is often what just died.
+# [[network.lan_probes]]
+# host = "192.168.1.1"
+# port = 80
+
+[[network.internet_probes]]
+host = "1.1.1.1"
+port = 443
+
+[[network.internet_probes]]
+host = "8.8.8.8"
+port = 53
+
+[actions]
+# Live outages can run these commands. argv is a list, not a shell string.
+# `brownout-buddy simulate` records the outage and does not run commands.
+command_timeout_seconds = 30
+
+# Remembered for a future "pause these apps" action. v0.1 does not pause
+# processes. When this list is non-empty, a power loss logs a stub result.
+pause_processes = []
+
+# Both are stubs in v0.1: the monitor logs that it did not change the OS.
+dim_brightness = false
+battery_saver = false
+
+# Stub in v0.1: the message, including a battery estimate when one exists,
+# is written to the log. Native notifications are on the roadmap.
+notify = true
+
+# [[actions.commands]]
+# on = "power_loss"
+# argv = ["echo", "power lost"]
+#
+# `on` is one of: power_loss, power_restore, internet_down, lan_down,
+# connectivity_restore.
+
+[store]
+# SQLite file. Empty uses the per-user data directory (see the README).
+path = ""
+
+[tray]
+# Show a menu-bar / tray icon when a graphical session and the tray
+# dependencies are available. Otherwise the monitor runs in the terminal.
+enabled = true
+
+[classifier]
+# Fuse power, internet, and gateway reachability into a label and a
+# confidence score. Light, sentinel, and history signals have interfaces
+# but do not affect the score until they are implemented.
+enabled = true
+# At or below this confidence, a future tray prompt would ask
+# "Brownout or unplugged?". v0.1 only records that the question is pending.
+prompt_below = 0.6
+# A label other than "unknown" needs a winning score at least this high...
+min_score = 0.55
+# ...and this far ahead of the runner-up.
+min_margin = 0.15
+
+[classifier.light]
+# Look for a real ambient-light sensor. v0.1 does not read lux.
+# The webcam is never used.
+enabled = true
+
+[classifier.sentinel]
+# Optional always-on LAN device (smart plug or a phone on a charger).
+# v0.1 stores the host and does not contact it.
+enabled = false
+host = ""
+port = 9
