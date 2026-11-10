@@ -60,6 +60,26 @@ def test_simulator_cli_labels_and_exports(tmp_path: Path, capsys, monkeypatch):
     assert main(base + ["simulate", "power-loss", "--router-down", "--router-up"]) == 2
 
 
+def test_stats_since_filters_and_rejects_a_bad_date(tmp_path: Path, capsys, monkeypatch):
+    clock = {"now": datetime(2026, 5, 1, 12, 0, tzinfo=timezone.utc)}
+    monkeypatch.setattr("brownout_buddy.cli.current_time", lambda: clock["now"])
+    config = tmp_path / "utc.toml"
+    config.write_text('timezone = "UTC"\n', encoding="utf-8")
+    base = ["--config", str(config), "--db", str(tmp_path / "outages.sqlite")]
+    assert main(base + ["simulate", "unplug"]) == 0
+    capsys.readouterr()
+    clock["now"] = datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc)
+    assert main(base + ["simulate", "offline"]) == 0
+    capsys.readouterr()
+
+    assert main(base + ["stats", "--by", "day", "--since", "2026-05-03"]) == 0
+    kept = capsys.readouterr().out
+    assert "since 2026-05-03" in kept
+    assert "internet:" in kept
+    assert "power:" not in kept
+    assert main(base + ["stats", "--since", "not-a-date"]) == 2
+
+
 def test_low_confidence_prompt_text(tmp_path: Path, capsys):
     db = tmp_path / "outages.sqlite"
     assert main(["--db", str(db), "simulate", "power-loss"]) == 0

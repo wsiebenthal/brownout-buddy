@@ -11,6 +11,7 @@ import logging
 import os
 import sys
 import threading
+from datetime import date
 from pathlib import Path
 
 from brownout_buddy import __version__
@@ -164,19 +165,39 @@ def _history(args: argparse.Namespace, monitor: Monitor) -> int:
 def _stats(args: argparse.Namespace, monitor: Monitor) -> int:
     now = current_time()
     zone = zone_for(monitor.config.timezone)
-    day = monitor.store.stats(by="day", tz=zone, now=now)
-    week = monitor.store.stats(by="week", tz=zone, now=now)
+    since = _parse_since(args.since)
+    day = monitor.store.stats(by="day", tz=zone, now=now, since=since)
+    week = monitor.store.stats(by="week", tz=zone, now=now, since=since)
+    name = monitor.config.timezone or "local"
     if args.json:
-        name = monitor.config.timezone or "local"
-        print(dumps(stats_dict(name, day, week)))
+        payload = stats_dict(name, day, week)
+        if since is not None:
+            payload["since"] = since.isoformat()
+        print(dumps(payload))
         return 0
     if args.by in (None, "day"):
-        print(format_stats(f"By day ({monitor.config.timezone or 'local'})", day))
+        print(format_stats(_stats_title("day", name, since), day))
     if args.by in (None, "week"):
         if args.by is None:
             print()
-        print(format_stats(f"By week ({monitor.config.timezone or 'local'})", week))
+        print(format_stats(_stats_title("week", name, since), week))
     return 0
+
+
+def _parse_since(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("--since must be YYYY-MM-DD") from exc
+
+
+def _stats_title(kind: str, timezone_name: str, since: date | None) -> str:
+    title = f"By {kind} ({timezone_name})"
+    if since is not None:
+        title += f" since {since.isoformat()}"
+    return title
 
 
 def _simulate(args: argparse.Namespace, monitor: Monitor) -> int:
@@ -263,6 +284,11 @@ def _parser() -> argparse.ArgumentParser:
 
     stats = sub.add_parser("stats", help="Counts and durations by day and week.")
     stats.add_argument("--by", choices=("day", "week"))
+    stats.add_argument(
+        "--since",
+        metavar="YYYY-MM-DD",
+        help="Only outages that started on or after this date, in the stats timezone.",
+    )
     stats.add_argument("--json", action="store_true")
 
     export = sub.add_parser("export", help="Write the log to CSV.")

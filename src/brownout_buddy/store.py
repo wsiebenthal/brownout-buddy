@@ -15,7 +15,7 @@ import json
 import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -324,8 +324,15 @@ class OutageStore:
         return [_record(row) for row in rows]
 
     def stats(
-        self, *, by: str, tz, now: datetime
+        self, *, by: str, tz, now: datetime, since: date | None = None
     ) -> list[StatBucket]:
+        """Aggregate by the start date in ``tz``.
+
+        ``since`` drops outages that started before that calendar date in
+        ``tz``. A week bucket then counts only the included outages, not the
+        whole week.
+        """
+
         if by not in ("day", "week"):
             raise ValueError("by must be 'day' or 'week'")
         buckets: dict[tuple[str, OutageType], list[int]] = defaultdict(
@@ -333,6 +340,8 @@ class OutageStore:
         )
         for record in self._all_rows():
             local = record.started_at.astimezone(tz)
+            if since is not None and local.date() < since:
+                continue
             if by == "day":
                 key = local.date().isoformat()
             else:

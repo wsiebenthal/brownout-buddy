@@ -110,7 +110,7 @@ brownout-buddy run --headless          # terminal monitor
 brownout-buddy run                     # tray when a desktop session exists
 brownout-buddy status
 brownout-buddy history
-brownout-buddy stats
+brownout-buddy stats --since 2026-01-01
 brownout-buddy export outages.csv
 ```
 

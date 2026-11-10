@@ -192,14 +192,31 @@ def test_stats_use_the_configured_zone_and_csv_round_trips(tmp_path: Path):
         ("2026-01-02", OutageType.POWER, 90)
     ]
     assert week[0].period == "2026-W01"
+    later = datetime(2026, 1, 3, 16, 30, tzinfo=timezone.utc)
+    monitor.simulate("offline", later)
+    monitor.simulate("restore", later + timedelta(seconds=30))
+    moment = later + timedelta(seconds=30)
+    kept = monitor.store.stats(by="day", tz=zone, now=moment, since=datetime(2026, 1, 4).date())
+    assert [(bucket.period, bucket.type) for bucket in kept] == [
+        ("2026-01-04", OutageType.INTERNET)
+    ]
+    week_kept = monitor.store.stats(
+        by="week", tz=zone, now=moment, since=datetime(2026, 1, 4).date()
+    )
+    assert [(bucket.period, bucket.type) for bucket in week_kept] == [
+        ("2026-W01", OutageType.INTERNET)
+    ]
     destination = tmp_path / "out.csv"
-    assert monitor.store.export_csv(destination) == 1
+    assert monitor.store.export_csv(destination) == 2
     with destination.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert rows[0]["type"] == "power"
     assert rows[0]["label"] == "unplugged"
+    assert rows[0]["confidence"]
     assert rows[0]["duration_seconds"] == "90"
     assert rows[0]["open"] == "false"
+    assert rows[1]["label"] == "isp-outage"
+    assert rows[1]["confidence"]
 
 
 def test_classifier_can_be_disabled(tmp_path: Path):
