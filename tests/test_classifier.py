@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -221,19 +222,24 @@ def test_light_capability_degrades_without_using_a_camera(tmp_path: Path):
     assert empty.present is False
     assert empty.supported is True
 
-    device = tmp_path / "iio:device0"
-    device.mkdir()
-    (device / "in_illuminance_raw").write_text("10\n", encoding="utf-8")
-    found = detect_light(platform="linux", sysfs_root=tmp_path)
-    assert found.present is True
-    assert "iio:device0" in found.detail
-
     mac = detect_light(platform="darwin")
     assert mac.supported is False
     assert "undocumented" in mac.detail
     windows = detect_light(platform="win32")
     assert "LightSensor" in windows.detail
     assert windows.supported is False
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="sysfs IIO names contain a colon, invalid on Windows"
+)
+def test_light_capability_detects_sysfs_illuminance_sensor(tmp_path: Path):
+    device = tmp_path / "iio:device0"
+    device.mkdir()
+    (device / "in_illuminance_raw").write_text("10\n", encoding="utf-8")
+    found = detect_light(platform="linux", sysfs_root=tmp_path)
+    assert found.present is True
+    assert "iio:device0" in found.detail
 
 
 def test_live_light_signal_is_a_stub_until_injected():
