@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use Brownout Buddy, please cite it as below."
+title: "Brownout Buddy"
+abstract: "Menu-bar app that notices brownouts and internet drops, protects work, and keeps a local outage log."
+type: software
+authors:
+  - given-names: Wesley
+    family-names: Siebenthal
+license: MIT
+repository-code: "https://github.com/wsiebenthal/brownout-buddy"
+version: 0.1.0
