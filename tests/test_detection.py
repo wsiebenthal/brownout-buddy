@@ -9,7 +9,11 @@ from brownout_buddy.detection.network import (
     probe_network,
     read_default_route,
 )
-from brownout_buddy.detection.power import interpret_battery, read_power
+from brownout_buddy.detection.power import (
+    interpret_battery,
+    interpret_windows_power_status,
+    read_power,
+)
 from brownout_buddy.models import NetworkStatus, PowerSource, RouteInfo
 
 
@@ -26,6 +30,27 @@ def test_interpret_battery_maps_plugged_state_and_sentinels():
     unknown = interpret_battery(None, secsleft=-2)
     assert unknown.source is PowerSource.UNKNOWN
     assert unknown.seconds_left is None
+
+
+def test_interpret_windows_power_status_maps_ac_battery_and_unknown():
+    ac = interpret_windows_power_status(1, 8, 95, 0xFFFFFFFF)
+    assert ac.source is PowerSource.AC
+    assert ac.percent == 95
+    assert ac.seconds_left is None
+
+    battery = interpret_windows_power_status(0, 0, 40, 5400)
+    assert battery.source is PowerSource.BATTERY
+    assert battery.seconds_left == 5400
+
+    unknown = interpret_windows_power_status(255, 255, 255, 0xFFFFFFFF)
+    assert unknown.source is PowerSource.UNKNOWN
+    assert unknown.percent is None
+
+
+def test_interpret_windows_power_status_without_battery_stays_unknown():
+    desktop = interpret_windows_power_status(1, 128, 255, 0xFFFFFFFF)
+    assert desktop.source is PowerSource.UNKNOWN
+    assert "No system battery" in desktop.note
 
 
 def test_read_power_does_not_raise_without_a_battery():

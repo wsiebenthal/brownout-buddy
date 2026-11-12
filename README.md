@@ -16,7 +16,7 @@ Version 0.1 is a working local monitor plus a rule-based classifier. It is not a
 
 | Capability | Status |
 | --- | --- |
-| Poll AC versus battery with psutil | Works where the OS exposes a battery. A desktop or VM with no battery stays `unknown` and is not treated as an outage. |
+| Poll AC versus battery (`GetSystemPowerStatus` on Windows, psutil elsewhere) | Works where the OS exposes a battery. A desktop or VM with no battery stays `unknown` and is not treated as an outage. |
 | TCP probes for internet, plus LAN versus upstream when a route or LAN probe can say so | Works. Linux can read `/proc/net/route`. Other systems need `lan_probes` to separate a dead router from a dead ISP. |
 | Menu-bar / tray icon for normal, on battery, offline, and paused | Works when a graphical session, Pillow, and a pystray backend are available. Otherwise the monitor runs in the terminal. |
 | Tray menu: status, recent outages, pause, settings, quit | Pause and quit work. Settings and the "Brownout or unplugged?" item are stubs. |
@@ -89,7 +89,7 @@ The tracker opens a power outage only when it sees AC become battery. The first 
 
 Python 3.11 or newer, on purpose. A menu-bar utility that reads a battery, pings a gateway, and writes SQLite does not need a browser runtime.
 
-- **psutil** for the battery.
+- **psutil** for the battery on macOS and Linux. Windows reads `GetSystemPowerStatus` through `ctypes` and falls back to psutil.
 - **stdlib** `sqlite3`, `tomllib`, `socket`, `subprocess`, and `zoneinfo` for the log, config, TCP probes, ping, and stats time zones.
 - **pystray** and **Pillow**, optional extra `tray`, for the icon. CI does not need a display.
 - **pytest** for the state machine, the scorer, and the log.
